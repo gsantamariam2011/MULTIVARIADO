@@ -1,0 +1,463 @@
+---
+title: "PROYECTO ANALISIS MULTIVARIADO"
+author: "GEOVANNY SANTAMARIA"
+date: "9/9/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE, warning= FALSE,  eval=FALSE, message = FALSE }
+knitr::opts_chunk$set(echo = TRUE) 
+```
+
+
+
+## PROYECTO DE ANÁLISIS MULTIVARIADO
+
+Los resultados del test que se consignan en la data en Excel que se adjunta, se propone observar el Constructo “Perfil Sicológico del joven adulto” aplicado a **600 jóvenes de la ciudad de Guayaquil**. 
+
+Cargamos las librerias para el proyecto
+
+```{r  warning=FALSE, error=FALSE, message=FALSE}
+#LIBRERIAS
+library(readxl)
+library(GPArotation)
+library(Matrix)
+library(nFactors)
+library(paran)
+library(descr)
+library(foreign)
+library(psych)
+library(haven)
+library(MVN)
+library(openxlsx)
+library(readxl)
+library(tidyverse)
+```
+# Cargar la base de Datos
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+getwd()
+setwd("C:/Users/santamarias/Desktop/CLASES PERU/2020 MULTIVARIADO/DEBER")
+base <- read_excel("C:/Users/santamarias/Desktop/CLASES PERU/2020 MULTIVARIADO/DEBER/DATA ANALISIS FACTORIAL.xlsx")
+dim(base)
+str(base)
+```
+
+## Generar los 10 valores para tener la data con 610 registros y 27 variables
+
+```{r pressure, warning=FALSE, error=FALSE, message=FALSE}
+n <- 10
+muestramia<- sample(1:nrow(base),size=n,replace=FALSE)
+muestramia
+#Asignar los elementos de la muestra al data frame de datos
+muestramia<- base[muestramia, ]
+dim(muestramia)
+base <- rbind(base,muestramia)
+#PARA EL ANALISIS SOLO LAS 27 VARIABLES
+base <- base[2:28]
+dim(base)
+# GUARDAR LA DATA
+write.xlsx(base, file = "DATOS0K2.xlsx", sheetName="Sheet1", col.names=TRUE, row.names=FALSE , append=FALSE)
+```
+
+# Abrir el nuevo archivo para el analisis
+
+```{r}
+base <- read_excel("DATOS0K.xlsx")
+head(base , 5)
+
+```
+
+# TEMA Nro.  1
+
+## 1° Determine con la matriz de correlaciones policóricas, la prueba de esfericidad de Bartlet y la prueba KMO si procede un análisis factorial. Expliqué porqué procede o no de acuerdo a cada uno de estos 3 criterios. 
+
+a.- Matriz de correlaciones policóricas
+
+```{r  warning=FALSE, error=FALSE, message=FALSE}
+library(psych)
+r.poly=polychoric(base)
+#r.poly
+R=round(r.poly$rho,2)    # La matriz de correlaciones polycórica
+R
+```
+
+Hay correlaciones entre variables lo que implica que si se puede realizar el análisis de factores(Ver arhivo de excel )
+
+b.- Esfericidad de Bartlet
+<br>
+Se puede verificar que hay correlaciones 
+Ho: La matriz de correlación es la identidad, 
+H1:  La matriz de correlaciones no es la identidad
+```{r  warning=FALSE, error=FALSE, message=FALSE}
+n = nrow(base)  # Tamaño de la muestra
+cortest.bartlett(R,n)
+```
+
+El valor p es casi 0, por lo que se se rechaza la hipotesis Ho, es decir la matriz de corrleación no es la matriz de identidad, es decir sus correlciones no son 0.
+
+c.- Kaiser-Meyer-Olkin (KMO)
+```{r  warning=FALSE, error=FALSE, message=FALSE}
+KMO(R)
+```
+
+El estadístico KMO nos informa sobre la idoneidad de una matriz de correlaciones para aplicar un análisis factorial, el índice KMO se utiliza para comparar las magnitudes de los coeficientes de correlación parcial, de forma que cuánto más cercano a 1 sea su valor, mayor será el valor de los coeficientes de correlación parciales.
+
+El valor de KMO es 0.87 por lo que se considera aceptable para realizar un analisis de factores, tambien en los items son mayores a 0.70
+
+## Realizamos un analisis exploratorio de las variables de estuido.
+
+Con la función summary() podemos obtener los estadísticos descriptivos básicos para todas las variables (columnas) de nuestra matriz de datos.
+```{r  warning=FALSE, error=FALSE, message=FALSE}
+summary(round(base),2)
+```
+
+# TEMA Nro.  2
+
+## 2° Con el Análisis Factorial confirme o no que el Test tiene 4 dimensiones o factores en el lugar de estudio.
+
+Identificando el N° de factores
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fap=fa.parallel(base,fa="fa",cor="poly")
+fap
+```
+
+Un analisis de factor sugiere que son 3 factores, el modelo de estudio sugiere 4 factores, el modelo sugiere realizar un analisis con 5 factores tambien.
+
+ Corriendo el modelo con 3 Factores
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+factorial3=fa.poly(base, nfactors=3, cor="poly",rotate="varimax")
+factorial3
+
+```
+
+El porcentaje de varianza acumulado de estos ** 3 factores es de 42%**
+
+ Gráfica de segmentación de factores es el grafico como se asocia los factores y preguntas
+ 
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fa.diagram(factorial3, e.size=.05,rsize=4.5)
+
+```
+
+## 2.2° Determine e interprete el porcentaje de varianza acumulado de estos 4 factores.
+
+## coriendo el modelo para 4 factores
+ 
+```{r warning=FALSE, error=FALSE, message=FALSE}
+factorial4=fa.poly(base, nfactors=4, cor="poly",rotate="varimax")
+factorial4
+
+```
+
+El porcentaje de varianza acumulado de estos ** 4 factores es de 45%**
+
+
+# Gráfica de segmentación de factores es el grafico como se asocia los factores y preg
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fa.diagram(factorial4, e.size=.05,rsize=4.5)
+
+```
+
+Realizar un analisis de factores exploratorio nos da el gráfico de sedimentación
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+paran(base, iterations=5000,graph=TRUE,color=TRUE, width=1000, height=1000) 
+
+```
+
+
+Gráficos y respuestas de 4 factores tambien exploratorio 
+ 
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fit_1<-principal(cor(base),nfactors=4,rotate="varimax" )
+fit_1$loadings
+
+```
+
+Gráfica de segmentación de factores es el grafico como se asocia los factores y preguntas
+ 
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fa.diagram(fit_1, e.size=.05,rsize=4.5)
+
+```
+
+## 3° Valide el Modelo de Análisis Factorial Confirmatorio con 4 factores con las métricas correspondientes (Chi Cuadrado, SRMR, RMSEA, TLI, CFI, GFI, AGFI, significancia de coeficientes del modelo y covarianza de los factores)
+
+Realizamos el modelo de Análisis Factorial Confirmatorio  con los 4 factores 
+
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+library(lavaan)
+modelo <- 'HUMAN = ~ HUMAN1 +	HUMAN2 +	HUMAN3 +	HUMAN4 + HUMAN5 +	HUMAN6 +
+HUMAN7 +	HUMAN8  + HUMAN9
+MATERIA = ~ MATERIA1 +	MATERIA2 +	MATERIA3 + MATERIA4 +	MATERIA5 +	MATERIA6 + 
+MATERIA7 +	MATERIA8 +	MATERIA9
+COGNITIVO = ~ COGNITIVO1 +	COGNITIVO2 +	COGNITIVO3 + COGNITIVO4 +	COGNITIVO5 +	COGNITIVO6 
+COGEMOC = ~ COGEMOC1 +	COGEMOC2 +	COGEMOC3'
+
+```
+
+
+Obteniendo indicadores: Chi Cuadrado, SRMR, RMSEA, TLI, CFI, GFI, AGFI, significancia de coeficientes del modelo y covarianza de los 4 factores
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fit <- cfa(modelo, data = base,ordered = TRUE)
+summary(fit, fit.measures = TRUE)
+
+```
+
+P-value (Chi-square)  Se mantiene el modelo El valor p > 0,05; no se recomenda el analisi factorial
+Radio mayor q 3 no se recomienda el modelo
+RMR cuando más pequeño se ajusta al  modelo, 0 es ajuste perfecto
+SRM menos igual q 0.08 el modelo se ajusta
+SRMR menor igual 0,06 el modelo se ajusta
+GFI/AGFI  es mayor igual q 0,95 el modelo se ajusta
+NFI mayor a 0,95 el modelo se ajusta
+NNFI o TLI   mayores 0,96 el modelo se ajusta
+RNI CFI  mayor 0.95 el modelo se ajusta
+
+
+
+Gráfico de senderos con el modelo
+
+```{r}
+
+library(semPlot)
+library(semTools)
+
+semPaths(fit, "std", rotation = 2, layout = "tree2", nCharNodes = 0, 
+         sizeLat= 14, sizeLat2 = 6, sizeMan = 4.3,
+         mar=c(2,6,2,4), curvePivot = TRUE,
+         edge.label.cex=1.5,residuals = F)
+
+semPaths(fit, what="std",residuals = T, rotation = 2,nCharNodes = 0,fade=F,sizeMan = 6)
+
+
+```
+
+##4° Si el Modelo de Análisis Factorial con 4 factores o dimensiones, resultase explicar menos del 60% de la varianza y/o no cumple con todas o la mayoría de métricas, aplique un Análisis Factorial exploratorio con el código: 
+Identificando el N° de factores
+fap=fa.parallel(Constructo,fa="fa",cor="poly")
+fap
+## Donde Constructo es el nombre de la data, y que ustedes pueden darle otro nombre; este código se encuentra en los que les he alcanzado y hemos corrido. El constructo es base para este proyecto
+
+Realizamos el analisis de factor
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+
+fap=fa.parallel(base,fa="fa",cor="poly")
+fap
+
+```
+
+Corremos el Modelo de factores para 5 factores por que tambien suguiere el analisis de fcatores
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+factorial5=fa.poly(base, nfactors=5, cor="poly",rotate="varimax")
+factorial5
+
+```
+
+Gráfica de segmentación de factores es el grafico como se asocia los factores y preg para los 5 factores
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fa.diagram(factorial5, e.size=.05,rsize=4.5)
+
+```
+
+
+# Estimación por componentes principales  para mostrar la gráfica
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fit_1<-principal(cor(base),nfactors=5,rotate="varimax" )
+fit_1$loadings
+
+```
+El porcentaje de varianza acumulado de estos ** 5 factores es de 53%**
+
+El nombre de los factores para los 5 factores sería:
+
+F1 = HUMANISMO 
+F2 = MATERIALISMO 
+F3 = COGNITIVO
+F4 = COGNITIVO EMOCIONAL 
+F5 = COGNITIVO EMOCIONAL - HUMANISTA
+
+
+## TEMA 4.2. 
+## Analice solo el porcentaje de varianza explicado con 3 y 5 factores, si éste resultase menor al 60%, eliminar los ítems del Test que considere restan la validez del modelo y halle un nuevo modelo factorial sin considerar los ítems eliminados. Se recomienda eliminar los ítems que tengan una correlación ítem subtest (ítem factor) menor a 0.65; ya que el KMO de todos los ítems es mayor a 0.70 (datos que les adelanto sucederá).
+
+Efectivamente el modelo explica:
+El porcentaje de varianza acumulado de estos ** 3 factores es de 42%**
+El porcentaje de varianza acumulado de estos ** 4 factores es de 45%**
+El porcentaje de varianza acumulado de estos ** 5 factores es de 53%**
+
+Realizamos el analisis de la matriz de correlación.
+```{r}
+r.poly=polychoric(base)
+r.poly
+R=r.poly$rho    # La matriz de correlaciones polycórica
+R
+#guardo en formato excel la matriz coropólica
+write.xlsx(R, file = "correlacion_policoricas.xlsx", sheetName="Sheet1", 
+                                col.names=TRUE, row.names=TRUE , append=FALSE)
+         
+
+```
+
+Efectivamente los KMO de todos los items som mayores a 0.70 
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+KMO(R)
+```
+
+Eliminamos los ítems del Test que considere restan la validez del modelo y halle un nuevo modelo factorial sin considerar los ítems eliminados
+
+Se recomienda eliminar los ítems que tengan una correlación ítem subtest (ítem factor) menor a 0.65
+
+Porcedemos a Formar los  factores
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+MATERIA <- base %>% select(c(3,	4,	8,	11,	14,	16	,20,	23,	25))
+HUMAN<- base %>% select(c(1	,5	,6	,9,	12,	15,	17,	19,	21))
+COGNITIVO <-  base %>% select(c(2,	7,	10,	13,	18,	22))
+COGEMOC <-  base %>% select(c(24,	26,	27))
+
+```
+
+Validación Subtest-Test, o Factor-Test 
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+subtest1=rowSums(MATERIA)
+subtest2=rowSums(HUMAN)
+subtest3=rowSums(COGNITIVO)
+subtest4=rowSums(COGEMOC)
+subtest=data.frame(subtest1,subtest2,subtest3,subtest4)
+Sum.total =rowSums(base)
+Subtest.test=cor(subtest,Sum.total)
+Subtest.test
+dim(subtest)
+dim(Subtest.test)
+
+```
+
+
+Validación item-subtest o item-factor 
+
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+item.subtest1=cor(subtest1,MATERIA)
+item.subtest1
+item.subtest2=cor(subtest2,HUMAN)
+item.subtest2
+item.subtest3=cor(subtest3,COGNITIVO)
+item.subtest3
+item.subtest4=cor(subtest4,COGEMOC)
+item.subtest4
+
+```
+
+Eliminamos los ítems que tengan una correlación ítem subtest (ítem factor) menor a 0.65
+La nueva base consta de 18 variables al eliminar los items que tienen una correlación item subtest (ítems factor)
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+base2 <- base %>% select(-c(26,	1,	6,	9,	19,	21,	4,	23,	25))
+head(base2)
+dim(base2)
+str(base2)
+
+```
+
+Realizamos el Análisis Factorial para la base de 610 registros 18 variables (ítem).
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fap=fa.parallel(base2,fa="fa",cor="poly")
+fap
+
+```
+
+Corriendo el modelo para 4 factores
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+factorial4b=fa.poly(base2, nfactors=4, cor="poly",rotate="varimax")
+factorial4b
+
+```
+
+ráfica de segmentación de factores es el grafico como se asocia los factores y preguntas
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fa.diagram(factorial4b, e.size=.05,rsize=4.5)
+
+```
+
+Estimación por componentes principales de las componentes
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fit_1<-principal(cor(base2),nfactors=4,rotate="varimax" )
+fit_1$loadings
+
+```
+
+El modelo explica el 58,6% de la variabilidad de los datos
+
+Mostramos el grafico de las componentes y sus items con sus respectivos factores.
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fa.diagram(fit_1, e.size=.05,rsize=4.5)
+
+```
+
+Realizamos el analisis Confirmatorio con la base de 18 items.
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+modelo2 <- 'HUMAN = ~ HUMAN2 +	 HUMAN5 +	HUMAN6 + HUMAN7 
+MATERIA = ~ MATERIA1  +	MATERIA3 + MATERIA4 +	MATERIA5 +	MATERIA6 + 	MATERIA8 
+COGNITIVO = ~ COGNITIVO1 +	COGNITIVO2 +	COGNITIVO3 + COGNITIVO4 +	COGNITIVO5 +	COGNITIVO6 
+COGEMOC = ~ COGEMOC1 +	COGEMOC2'
+```
+
+Obteniendo indicadores
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+fit <- cfa(modelo2, data = base2 ,ordered = TRUE)
+summary(fit, fit.measures = TRUE)
+```
+
+Gráfico de senderos
+
+```{r warning=FALSE, error=FALSE, message=FALSE}
+library(semPlot)
+library(semTools)
+
+semPaths(fit, "std", rotation = 2, layout = "tree2", nCharNodes = 0, 
+         sizeLat= 14, sizeLat2 = 6, sizeMan = 4.3,
+         mar=c(2,6,2,4), curvePivot = TRUE,
+         edge.label.cex=1.5,residuals = F)
+
+semPaths(fit, what="std",residuals = T, rotation = 2,nCharNodes = 0,fade=F,sizeMan = 6)
+```
+
+
+## 5° Escriba con sus coeficientes, el mejor modelo factorial que han encontrado.
+
+El mejor modelo es con 4 factores y 18 variables por que tienen explica el 58,6% de la variabilidad de los datos que es mejor al de los anteriores.
+
+HUMAN = 1HUMAN2 + 0,763HUMAN5 + 0.880 HUMAN6 + 0.720HUMAN7
+
+MATERIA = 1MATERIA1 + 0.909MATERIA3 + 0.799MATERIA4 + 0.835MATERIA5 + 0.929MATERIA6 + 0.769MATERIA8 
+
+COGNITIVO = 1COGNITIVO1 + 0.992COGNITIVO2 + 0.987COGNITIVO3 + 1.029COGNITIVO4 + 0.925COGNITIVO5 + 0.798COGNITIVO6
+
+COGEMOC =  1COGEMOC1  +  0.730COGEMOC1  	
+
+
+
